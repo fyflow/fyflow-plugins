@@ -1,0 +1,8 @@
+{
+  "name": "fixture-built-source",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "repository": { "type": "git", "url": "git+https://github.com/example/fixture-built.git" },
+  "fyflow": { "name": "Test built", "build": "node build.js", "pack": "dist" }
+}

@@ -1,0 +1,257 @@
+# A reusable workflow for Plugin authors: on a tag `<id>@<version>`, finds the Plugin with that id and version (the
+# repository root, or one of plugins/*), packs it with `fyflow-plugin pack` (once, or once per platform group on its
+# own runner), creates a GitHub Release for the tag with the tarballs, and opens a PR against fyflow/fyflow-plugins
+# adding the version. Without the FYFLOW_PLUGINS_TOKEN secret it prints the entry and stops, for a PR by hand.
+#
+# The author's workflow (the SDK README, "Publishing to the official repository", has it whole):
+#
+#   on: { push: { tags: ["*@*"] } }
+#   jobs:
+#     release:
+#       permissions: { contents: write }
+#       uses: fyflow/fyflow-plugins/.github/workflows/release-plugin.yml@v1
+#       secrets: { FYFLOW_PLUGINS_TOKEN: "${{ secrets.FYFLOW_PLUGINS_TOKEN }}" }
+name: Release a Plugin
+
+on:
+  workflow_call:
+    inputs:
+      platforms:
+        description: >-
+          Empty for one tarball for every platform (the usual case). Else one tarball per group, each packed with
+          `fyflow-plugin pack --platform` on its own runner: groups separated by spaces, a group's platforms by
+          commas, as Node spells them (`win32-x64 darwin-arm64,darwin-x64 linux-x64`).
+        type: string
+        default: ""
+      node-version:
+        description: The Node that builds and packs the Plugin.
+        type: string
+        default: "26"
+      install:
+        description: >-
+          The command that installs the repository's dependencies. Default: `pnpm install --frozen-lockfile` with a
+          pnpm-lock.yaml, `npm ci` with a package-lock.json, else nothing.
+        type: string
+        default: ""
+      tag:
+        description: "The tag to release, `<id>@<version>`. Default: the tag that triggered the run."
+        type: string
+        default: ""
+      index-repository:
+        description: The index repository the PR goes to.
+        type: string
+        default: fyflow/fyflow-plugins
+      tools-ref:
+        description: The ref of fyflow/fyflow-plugins whose scripts run; keep it the major you call.
+        type: string
+        default: v1
+    secrets:
+      FYFLOW_PLUGINS_TOKEN:
+        description: >-
+          A token that can fork fyflow/fyflow-plugins and open a PR against it (a classic PAT with `public_repo`).
+          Without it, the workflow prints the entry and the author opens the PR by hand.
+        required: false
+    outputs:
+      pull-request:
+        description: The URL of the PR against the index, when one was opened.
+        value: ${{ jobs.release.outputs.pull-request }}
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then tag="$INPUT_TAG"
+          elif [ "$REF_TYPE" = tag ]; then tag="$REF_NAME"
+          else echo "::error::Run this on a tag <id>@<version>, or pass the tag input."; exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          repository: fyflow/fyflow-plugins
+          ref: ${{ inputs.tools-ref }}
+          path: .fyflow-plugins
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
+      - id: plan
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          PLATFORMS: ${{ inputs.platforms }}
+        run: node .fyflow-plugins/scripts/release/cli.ts plan --tag "$TAG" --platforms "$PLATFORMS"
+
+  pack:
+    name: pack ${{ matrix.platforms || 'for every platform' }}
+    needs: plan
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ needs.plan.outputs.tag }}
+          path: src
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          repository: fyflow/fyflow-plugins
+          ref: ${{ inputs.tools-ref }}
+          path: .fyflow-plugins
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: install the release scripts
+        shell: bash
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
+      - name: install the repository's dependencies
+        shell: bash
+        working-directory: src
+        env:
+          INSTALL: ${{ inputs.install }}
+        run: bash ../.fyflow-plugins/scripts/release/install.sh
+      - name: find the Plugin, build and pack it
+        shell: bash
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+          PLATFORMS: ${{ matrix.platforms }}
+        run: >-
+          node .fyflow-plugins/scripts/release/cli.ts pack --root src --tag "$TAG" --platforms "$PLATFORMS"
+          --out "$RUNNER_TEMP/dist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pack-${{ strategy.job-index }}
+          path: |
+            ${{ runner.temp }}/dist/*.tgz
+            ${{ runner.temp }}/dist/*.result.json
+          if-no-files-found: error
+
+  release:
+    needs: [plan, pack]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # the Release, in the author's repository
+    outputs:
+      pull-request: ${{ steps.pr.outputs.url }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: fyflow/fyflow-plugins
+          ref: ${{ inputs.tools-ref }}
+          path: .fyflow-plugins
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pack-*
+          merge-multiple: true
+          path: dist
+      - name: merge the entries into one version
+        env:
+          REPO: ${{ github.repository }}
+        run: node .fyflow-plugins/scripts/release/cli.ts merge --dist dist --repo "$REPO" --out release.json
+      - name: create the Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          mapfile -t assets < <(node -p "require('./release.json').assets.join('\n')")
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
+            # A re-run: the Release's tarballs must be these, byte for byte, or the entry would not match them.
+            mkdir -p existing
+            for asset in "${assets[@]}"; do
+              gh release download "$TAG" --repo "$REPO" --pattern "$asset" --dir existing --clobber \
+                || { echo "::error::The Release $TAG exists without $asset. Delete it (if its version is not in the index yet) and re-run, or release a new version."; exit 1; }
+              cmp -s "dist/$asset" "existing/$asset" \
+                || { echo "::error::The Release $TAG holds another $asset than this run packed. Delete it (if its version is not in the index yet) and re-run, or release a new version."; exit 1; }
+            done
+            echo "The Release $TAG is there with these tarballs already."
+          else
+            gh release create "$TAG" "${assets[@]/#/dist/}" --repo "$REPO" --verify-tag --title "$TAG" \
+              --notes "Released by the fyflow-plugins release workflow. The index entry is in the workflow run's summary."
+          fi
+          {
+            echo "### $TAG"
+            echo
+            echo "The version, as fyflow-plugins gets it:"
+            echo
+            echo '```json'
+            node -p "JSON.stringify(require('./release.json').version, null, 2)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - id: pr
+        name: open the PR against the index
+        env:
+          TOKEN: ${{ secrets.FYFLOW_PLUGINS_TOKEN }}
+          INDEX: ${{ inputs.index-repository }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          id=$(node -p "require('./release.json').meta.id")
+          if [ -z "$TOKEN" ]; then
+            {
+              echo
+              echo "### Open the PR by hand"
+              echo
+              echo "No FYFLOW_PLUGINS_TOKEN secret, so no PR was opened. In a fork of $INDEX, add the version above to"
+              echo "\`versions\` in \`plugins/$id.json\` (for a first version, create the file with the Plugin's fields:"
+              echo "the \`apply\` step below would have written it), and open a PR. Its checks say what is wrong, if anything."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice title=No PR opened::No FYFLOW_PLUGINS_TOKEN secret: the Release is made; open the PR against $INDEX by hand with the entry in this run's summary."
+            exit 0
+          fi
+          export GH_TOKEN="$TOKEN"
+          login=$(gh api user --jq .login)
+          user_id=$(gh api user --jq .id)
+          # Push to the index itself where the token may (a maintainer's); else to the token owner's fork of it.
+          if [ "$(gh api "repos/$INDEX" --jq .permissions.push)" = true ]; then
+            head_repo="$INDEX"
+          else
+            gh repo fork "$INDEX" --clone=false --default-branch-only > /dev/null 2>&1 || true
+            head_repo="$login/${INDEX#*/}"
+            for _ in $(seq 1 30); do gh api "repos/$head_repo" > /dev/null 2>&1 && break; sleep 5; done
+          fi
+          branch="release/$TAG"
+          git clone --quiet --depth 1 "https://x-access-token:${TOKEN}@github.com/${INDEX}.git" index
+          node .fyflow-plugins/scripts/release/cli.ts apply --release release.json --index index | tee apply.txt
+          cd index
+          git checkout --quiet -b "$branch"
+          git add plugins
+          git -c user.name="$login" -c user.email="${user_id}+${login}@users.noreply.github.com" commit --quiet -m "$TAG"
+          git push --quiet --force "https://x-access-token:${TOKEN}@github.com/${head_repo}.git" "HEAD:refs/heads/$branch"
+          if grep -q '^added' ../apply.txt; then title="Add $id ($TAG)"; else title="$TAG"; fi
+          {
+            echo "Released from https://github.com/$REPO by $RUN_URL."
+            echo
+            echo "Release: https://github.com/$REPO/releases/tag/$(node -p "encodeURIComponent(process.argv[1])" "$TAG")"
+          } > ../body.md
+          url=$(gh pr list --repo "$INDEX" --head "$branch" --state open --json url --jq '.[0].url // empty')
+          if [ -z "$url" ]; then
+            url=$(gh pr create --repo "$INDEX" --base main --head "${head_repo%%/*}:$branch" --title "$title" --body-file ../body.md)
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "PR against $INDEX: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=PR opened::$url"

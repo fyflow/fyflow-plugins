@@ -1,0 +1,107 @@
+# The check on every PR: the static checks on plugins/*.json, then each new version's artifacts downloaded, checked
+# and loaded on a runner of their platform, and the tests of these scripts. It runs Plugin code from strangers, so no
+# job has a secret or a token that can write: `permissions` is read-only, checkouts keep no credentials, and nothing is
+# cached between runs. `admit` is the one check branch protection requires.
+name: PR check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "26"
+
+jobs:
+  validate:
+    name: validate plugins/*.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.check.outputs.matrix }}
+      count: ${{ steps.check.outputs.count }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - id: check
+        name: schema, file names, ids, immutability, names
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          # A maintainer removes a version with this label; editing one is never allowed.
+          ALLOW_REMOVAL: ${{ contains(github.event.pull_request.labels.*.name, 'remove-version') }}
+        run: |
+          if [ "$ALLOW_REMOVAL" = "true" ]; then
+            node scripts/check-pr.ts --base "$BASE" --allow-removal
+          else
+            node scripts/check-pr.ts --base "$BASE"
+          fi
+
+  load:
+    name: load ${{ matrix.id }}@${{ matrix.version }} (${{ matrix.platforms }})
+    needs: validate
+    if: needs.validate.outputs.count != '0'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: download, verify, unpack, load
+        shell: bash
+        env:
+          ID: ${{ matrix.id }}
+          VERSION: ${{ matrix.version }}
+          ARTIFACT: ${{ matrix.artifact }}
+          LOAD: ${{ matrix.load }}
+        run: node scripts/check-artifact.ts --id "$ID" --version "$VERSION" --artifact "$ARTIFACT" --load "$LOAD"
+
+  test:
+    name: test the CI scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+
+  admit:
+    name: admit
+    needs: [validate, load, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: every check passed
+        env:
+          VALIDATE: ${{ needs.validate.result }}
+          LOAD: ${{ needs.load.result }}
+          TEST: ${{ needs.test.result }}
+          COUNT: ${{ needs.validate.outputs.count }}
+        run: |
+          echo "validate: $VALIDATE, load: $LOAD ($COUNT artifacts), test: $TEST"
+          [ "$VALIDATE" = success ] && [ "$TEST" = success ] || exit 1
+          # The load jobs are skipped only when the PR adds no version.
+          [ "$LOAD" = success ] || { [ "$LOAD" = skipped ] && [ "$COUNT" = 0 ]; } || exit 1

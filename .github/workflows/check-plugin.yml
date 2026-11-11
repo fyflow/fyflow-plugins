@@ -1,0 +1,54 @@
+# A reusable workflow for Plugin authors' CI on push: packs each Plugin of the calling repository (the root, or each
+# of plugins/*) with `fyflow-plugin pack` into a temporary folder, as a check that it packs. Call it with
+#
+#   uses: fyflow/fyflow-plugins/.github/workflows/check-plugin.yml@v1
+name: Check that the Plugins pack
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: The Node that packs (and builds) the Plugins.
+        type: string
+        default: "26"
+      install:
+        description: >-
+          The command that installs the repository's dependencies. Default: `pnpm install --frozen-lockfile` with a
+          pnpm-lock.yaml, `npm ci` with a package-lock.json, else nothing.
+        type: string
+        default: ""
+      tools-ref:
+        description: The ref of fyflow/fyflow-plugins whose scripts run; keep it the major you call.
+        type: string
+        default: v1
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: src
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          repository: fyflow/fyflow-plugins
+          ref: ${{ inputs.tools-ref }}
+          path: .fyflow-plugins
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: install the release scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
+      - name: install the repository's dependencies
+        working-directory: src
+        env:
+          INSTALL: ${{ inputs.install }}
+        run: bash ../.fyflow-plugins/scripts/release/install.sh
+      - name: pack each Plugin
+        run: node .fyflow-plugins/scripts/release/cli.ts check --root src --out "$RUNNER_TEMP/packed"

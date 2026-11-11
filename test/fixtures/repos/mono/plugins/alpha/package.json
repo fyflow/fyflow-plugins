@@ -1,0 +1,8 @@
+{
+  "name": "fyflow-plugin-test-alpha",
+  "version": "1.0.0",
+  "description": "A test fixture in a monorepo: never published.",
+  "type": "module",
+  "homepage": "https://github.com/example/fixture-monorepo",
+  "peerDependencies": { "fyflow-plugin-sdk": "^0.10.0" }
+}

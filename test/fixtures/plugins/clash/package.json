@@ -1,0 +1,7 @@
+{
+  "name": "fyflow-plugin-test-clash",
+  "version": "2.0.0",
+  "description": "A test fixture whose Node Type name is test.echo's: never published.",
+  "type": "module",
+  "peerDependencies": { "fyflow-plugin-sdk": "^0.10.0" }
+}

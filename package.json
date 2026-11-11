@@ -1,0 +1,18 @@
+{
+  "name": "fyflow-plugins",
+  "private": true,
+  "description": "The official fyflow Plugin repository: its index, the CI that admits Plugins, and the release workflow authors call",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.ts\"",
+    "check": "node scripts/check-pr.ts",
+    "build": "node scripts/build-index.ts --out _site"
+  },
+  "dependencies": {
+    "zod": "4.6.6"
+  }
+}

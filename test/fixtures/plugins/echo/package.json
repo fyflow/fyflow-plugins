@@ -1,0 +1,8 @@
+{
+  "name": "fyflow-plugin-test-echo",
+  "version": "1.0.0",
+  "description": "A test fixture: never published.",
+  "type": "module",
+  "peerDependencies": { "fyflow-plugin-sdk": "^0.10.0" },
+  "fyflow": { "name": "Test echo", "icon": "repeat" }
+}

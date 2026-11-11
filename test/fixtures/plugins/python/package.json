@@ -1,0 +1,8 @@
+{
+  "name": "fyflow-plugin-test-python",
+  "version": "0.3.0",
+  "description": "A test fixture with a Python Worker: never published.",
+  "type": "module",
+  "peerDependencies": { "fyflow-plugin-sdk": "^0.8.0" },
+  "files": ["plugin.ts", "python/pyproject.toml", "python/uv.lock", "python/fixture_python/", "!**/__pycache__"]
+}
