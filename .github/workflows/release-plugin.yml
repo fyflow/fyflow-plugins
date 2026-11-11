@@ -78,13 +78,13 @@ jobs:
           else echo "::error::Run this on a tag <id>@<version>, or pass the tag input."; exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: fyflow/fyflow-plugins
           ref: ${{ inputs.tools-ref }}
           path: .fyflow-plugins
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
       - run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
@@ -103,18 +103,18 @@ jobs:
       fail-fast: true
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.plan.outputs.tag }}
           path: src
           persist-credentials: false
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: fyflow/fyflow-plugins
           ref: ${{ inputs.tools-ref }}
           path: .fyflow-plugins
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
       - name: install the release scripts
@@ -134,7 +134,7 @@ jobs:
         run: >-
           node .fyflow-plugins/scripts/release/cli.ts pack --root src --tag "$TAG" --platforms "$PLATFORMS"
           --out "$RUNNER_TEMP/dist"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pack-${{ strategy.job-index }}
           path: |
@@ -151,17 +151,17 @@ jobs:
     outputs:
       pull-request: ${{ steps.pr.outputs.url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: fyflow/fyflow-plugins
           ref: ${{ inputs.tools-ref }}
           path: .fyflow-plugins
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
       - run: npm ci --ignore-scripts --no-audit --no-fund --prefix .fyflow-plugins
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: pack-*
           merge-multiple: true

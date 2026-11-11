@@ -27,11 +27,11 @@ jobs:
       matrix: ${{ steps.check.outputs.matrix }}
       count: ${{ steps.check.outputs.count }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -58,10 +58,10 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm ci --ignore-scripts --no-audit --no-fund
@@ -79,10 +79,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm ci --ignore-scripts --no-audit --no-fund
