@@ -1,0 +1,27 @@
+{
+  "id": "fyflow-ext.anidb",
+  "name": "AniDB",
+  "description": "A fyflow-app Plugin for AniDB's UDP API, built on anidb-udp-client",
+  "homepage": "https://github.com/tsukeero/fyflow-plugin-anidb#readme",
+  "icon": "database",
+  "versions": [
+    {
+      "version": "0.0.4",
+      "sdk": "^0.6.0",
+      "python": false,
+      "url": "https://github.com/tsukeero/fyflow-plugin-anidb/releases/download/fyflow-ext.anidb%400.0.4/fyflow-plugin-anidb-0.0.4.tgz",
+      "integrity": "sha512-ikQrUACRqaZzpPAyD+o4i6jU/c7TnS/d9hHwoXqan5QNHdCcKAlww8HIW2ZgPfy+jMXTtjOU+UFwmlpuALCl0Q==",
+      "names": {
+        "nodeTypes": [
+          "AniDBAnime",
+          "AniDBEpisode",
+          "AniDBIdentifyFile",
+          "AniDBMyListGet",
+          "AniDBMyListAdd",
+          "AniDBHashFile"
+        ],
+        "gateTypes": []
+      }
+    }
+  ]
+}
