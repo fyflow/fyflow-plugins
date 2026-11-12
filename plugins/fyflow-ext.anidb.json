@@ -22,6 +22,24 @@
         ],
         "gateTypes": []
       }
+    },
+    {
+      "version": "0.1.0",
+      "sdk": "^0.11.0",
+      "python": false,
+      "url": "https://github.com/tsukeero/fyflow-plugin-anidb/releases/download/fyflow-ext.anidb%400.1.0/fyflow-plugin-anidb-0.1.0.tgz",
+      "integrity": "sha512-kmlULUaP6zwkbrntDIc8eqSUCOljrE5+I8NxbUXxoZnuKA2qN64lA+VP0cVwb/rKOssN/7EBIhwUniBS9gd8QA==",
+      "names": {
+        "nodeTypes": [
+          "AniDBAnime",
+          "AniDBEpisode",
+          "AniDBIdentifyFile",
+          "AniDBMyListGet",
+          "AniDBMyListAdd",
+          "AniDBHashFile"
+        ],
+        "gateTypes": []
+      }
     }
   ]
 }
