@@ -151,7 +151,7 @@ On every PR (`.github/workflows/pr.yml`). It runs Plugin code from strangers, so
 3. **Each new artifact.** Downloaded (https, 256 MB at most, as a Host takes) and refused unless its SHA-512 equals `integrity`, then unpacked as a Host unpacks it (no links, nothing outside the package). Its `package.json` has the entry's `version` and a `fyflow-plugin-sdk` peer range equal to `sdk`. When `python` is not `false`, it holds a Python project with `pyproject.toml` and `uv.lock`. When the package has `dependencies` (and does not bundle them), it holds `npm-shrinkwrap.json`.
 4. **Loaded as a Host loads it**, with Node 26, on a runner of each platform the artifact names (Linux for one that runs everywhere; one for a platform no GitHub runner has is checked but not loaded). The published `fyflow-plugin-sdk` is installed in a folder above it, as a Host provides it. Its dependencies are installed with `npm ci --ignore-scripts --omit=dev --omit=peer`. Its entry is imported (`plugin.ts`, else `plugin.js`, else the package's `exports`/`main`) in a process of its own. Its definition's `id` and `version` must equal the entry's, its Node Types and gate types the entry's `names`, and its Python Workers the entry's `python` (and its `python.project` must hold `pyproject.toml` and `uv.lock`). Every artifact of a version is checked against the same `names`, so all of them declare the same Node Types and gate types.
 5. **Names are unique across Plugins.** A Node Type or gate type name another Plugin already declares, in any of its versions, is refused. Names are global on a Host (fyflow-app ADR-0029): two Plugins sharing one would bind a shared Flow to the wrong Plugin. A Plugin keeps its own names from version to version.
-6. **Warnings, which do not block:** an `sdk` range that admits none of the SDK versions current Hosts implement (0.10.0, 0.9.0, 0.8.0, 0.7.0, 0.6.0, 0.5.0), as no Host would list it; an `icon` the app does not have, as it is not shown; a tarball holding `.venv` or `__pycache__`.
+6. **Warnings, which do not block:** an `sdk` range that admits none of the SDK versions current Hosts implement (0.12.0, 0.11.0, 0.10.1, 0.10.0, 0.9.0, 0.8.0, 0.7.0, 0.6.0, 0.5.0), as no Host would list it; an `icon` the app does not have, as it is not shown; a tarball holding `.venv` or `__pycache__`.
 7. **The scripts' own tests** (`npm test`).
 
 On every push to `main` (`.github/workflows/publish.yml`), the publish job builds `index.json` from `plugins/*.json`. It sets each version's `published` to the time of the first commit that added it, from git history, so the build is deterministic and needs no bot commit. It validates the result against the Host's schema once more, and deploys it with a plain `index.html` to GitHub Pages. With no Plugins, the index is `{"schema":1,"plugins":[]}`, which a Host accepts.
@@ -190,7 +190,7 @@ node scripts/build-index.ts --out _site    # the site the publish job deploys
 npx -p typescript -p @types/node tsc -p tsconfig.json   # type check
 ```
 
-The tests and `check-artifact.ts` install `fyflow-plugin-sdk` from `FYFLOW_PLUGIN_SDK`: an npm spec or a tarball's path, `fyflow-plugin-sdk@^0.10.0` by default. Before an SDK is on npm, point it at the tarball `pnpm sdk:pack` makes in fyflow-app.
+The tests and `check-artifact.ts` install `fyflow-plugin-sdk` from `FYFLOW_PLUGIN_SDK`: an npm spec or a tarball's path, `fyflow-plugin-sdk@^0.12.0` by default. Before an SDK is on npm, point it at the tarball `pnpm sdk:pack` makes in fyflow-app.
 
 | Path | What it is |
 | --- | --- |

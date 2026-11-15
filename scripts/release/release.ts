@@ -207,7 +207,7 @@ export interface PackResult {
 /** The command that runs `fyflow-plugin pack`: `FYFLOW_PLUGIN_PACK`, else npx with `FYFLOW_PLUGIN_SDK`. */
 export const packCommand = () =>
   process.env.FYFLOW_PLUGIN_PACK ||
-  `npx --yes -p "${process.env.FYFLOW_PLUGIN_SDK || "fyflow-plugin-sdk@^0.10.0"}" fyflow-plugin pack`; // quoted: cmd.exe reads ^ as an escape
+  `npx --yes -p "${process.env.FYFLOW_PLUGIN_SDK || "fyflow-plugin-sdk@^0.12.0"}" fyflow-plugin pack`; // quoted: cmd.exe reads ^ as an escape
 
 const quote = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
 
