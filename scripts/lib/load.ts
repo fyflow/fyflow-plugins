@@ -25,7 +25,7 @@ export interface Loaded {
 export class LoadFailed extends Error {}
 
 /** What the SDK is installed from: an npm spec, or a tarball's path (`FYFLOW_PLUGIN_SDK`). */
-export const sdkSpec = () => process.env.FYFLOW_PLUGIN_SDK || "fyflow-plugin-sdk@^0.10.0";
+export const sdkSpec = () => process.env.FYFLOW_PLUGIN_SDK || "fyflow-plugin-sdk@^0.12.0";
 
 /** The environment a stranger's code and npm get: enough to run, and no token or secret of the job's. */
 export function plainEnv(): NodeJS.ProcessEnv {

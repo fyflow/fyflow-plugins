@@ -250,10 +250,11 @@ describe("rule 6: warnings, not refusals", () => {
   });
 
   it("warns of an sdk range no current Host admits", () => {
-    for (const sdk of ["^0.5.0", "^0.10.0", ">=0.6.0", "0.9.x"])
+    for (const sdk of ["^0.5.0", "^0.10.0", "^0.11.0", "^0.12.0", "^0.11.0 || ^0.12.0", ">=0.6.0", "0.9.x"])
       assert.deepEqual(warningsFor(checked(pluginFile("a.b", [version("1.0.0", { sdk })]))), [], sdk);
     for (const [sdk, pattern] of [
       ["^0.4.0", /admits none/],
+      ["^0.13.0", /admits none/],
       ["^1.0.0", /admits none/],
       ["0.5.0 - 0.9.0", /cannot be read/],
     ] as const) {

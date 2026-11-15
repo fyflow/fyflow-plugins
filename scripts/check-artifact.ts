@@ -5,7 +5,7 @@
 //
 //   node scripts/check-artifact.ts --id <id> --version <version> --artifact <n> [--load false]
 //
-// The SDK is installed from FYFLOW_PLUGIN_SDK (an npm spec or a tarball's path; default fyflow-plugin-sdk@^0.10.0).
+// The SDK is installed from FYFLOW_PLUGIN_SDK (an npm spec or a tarball's path; default fyflow-plugin-sdk@^0.12.0).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { checkArtifact } from "./lib/artifact.ts";

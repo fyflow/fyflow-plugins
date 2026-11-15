@@ -21,7 +21,7 @@ export const ICON_NAMES = [
  * The SDK versions current Hosts implement: fyflow-plugin-sdk's `SDK_VERSION` and `SDK_COMPATIBLE`. A version whose
  * `sdk` range admits none of them is listed by no current Host: a warning here.
  */
-export const HOST_SDK_VERSIONS = ["0.10.1", "0.10.0", "0.9.0", "0.8.0", "0.7.0", "0.6.0", "0.5.0"];
+export const HOST_SDK_VERSIONS = ["0.12.0", "0.11.0", "0.10.1", "0.10.0", "0.9.0", "0.8.0", "0.7.0", "0.6.0", "0.5.0"];
 
 /** The largest artifact a Host downloads. */
 export const MAX_ARTIFACT_BYTES = 256 * 1024 * 1024;
