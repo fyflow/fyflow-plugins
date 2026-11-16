@@ -51,6 +51,23 @@
         ],
         "gateTypes": []
       }
+    },
+    {
+      "version": "0.4.1",
+      "sdk": "^0.11.0 || ^0.12.0",
+      "python": false,
+      "url": "https://github.com/tsukeero/fyflow-plugin-video-thumbnails/releases/download/fyflow-ext.video-thumbnail%400.4.1/fyflow-plugin-video-thumbnail-0.4.1.tgz",
+      "integrity": "sha512-pVxN3nFPR0tmYu7qGllH96MqCL5TxYa48dxkPtAEAA7bvbPfzPH8gT1/6ukxAFozUwv7poQHmGdIG0Uk5zdaiA==",
+      "names": {
+        "nodeTypes": [
+          "VideoThumbnail",
+          "ExtractFrames",
+          "DetectScenes",
+          "VideoFiles",
+          "IsVideo"
+        ],
+        "gateTypes": []
+      }
     }
   ]
 }
