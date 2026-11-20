@@ -86,6 +86,29 @@
         ],
         "gateTypes": []
       }
+    },
+    {
+      "version": "0.4.0",
+      "sdk": "^0.11.0",
+      "python": {
+        "variants": [
+          "cpu",
+          "cuda",
+          "directml"
+        ]
+      },
+      "url": "https://github.com/fyflow/fyflow-plugin-image-tags/releases/download/fyflow-ext.image-tags%400.4.0/fyflow-plugin-image-tags-0.4.0.tgz",
+      "integrity": "sha512-7dTCXYiV8ia+MMlfktI1raMaA9vmNmEKH/jv8q5R2g0oi7lhHblBRtwghPZcXqSY/yv3wscv8Bjthg9rVCGJlg==",
+      "names": {
+        "nodeTypes": [
+          "ClassifyImage",
+          "ClassifyFrames",
+          "TagImage",
+          "TagFrames",
+          "TagScenes"
+        ],
+        "gateTypes": []
+      }
     }
   ]
 }
